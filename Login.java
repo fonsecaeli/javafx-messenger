@@ -1,8 +1,5 @@
 
  //Eli F.
- //Description: login gui for my instant messanger (final project CS3)
- //I used the oracle tutorial to learn about javafx, I started the login page
- //with oracles example code.  I have modified it to fit the needs of my program.
 
 import javafx.application.Application;
 import javafx.event.ActionEvent;
@@ -39,7 +36,7 @@ public class Login extends Application {
 
    private static final String applicationName = "Instant Messenger-Client";
    private static final String loginWindowName = "JavaIM-Login";
-   private static final String serverIP = "127.0.0.1";
+   private static final String serverIP = "192.168.1.137";
    private String userName; //this clients address
    private String recipient; //whomever this client is currently talking with
    
