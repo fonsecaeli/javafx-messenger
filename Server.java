@@ -12,8 +12,14 @@ public class Server {
    private Map<String, MessageHandler> connections; //to hold all of the connecitons currently avalible for communication
    private Map<String, String> userIDs; //TODO hash the passwords so they are not exposed
    private Map<InetAddress, String> userNames;
+   private ArrayList<Integer> usedPorts;
+   private static int chatPort = 5768;
+   private static int idPort = 9999;
    
    public Server() {
+      usedPorts = new ArrayList<Integer>();
+      usedPorts.add(new Integer(idPort));
+      usedPorts.add(new Integer(chatPort));
       ServerSocket server = null;
       ServerSocket idSocket = null;
       this.connections = new HashMap<String, MessageHandler>(); //matches user names too messageHandlers so clients can request to chat with people by username instead of ip
@@ -23,8 +29,8 @@ public class Server {
       userIDs.put("Ravi", "Smith");
       try {
          //TODO: random port nums right now will formalize later
-         server = new ServerSocket(5678);
-         idSocket = new ServerSocket(9999);
+         server = new ServerSocket(chatPort);
+         idSocket = new ServerSocket(idPort);
       }
       catch(IOException e) {
          System.out.println("error binding serversocket to port");
@@ -32,8 +38,8 @@ public class Server {
       }
       while(true) {
          try {
-            waitForIdentification(idSocket);
-            waitForConnection(server);
+            waitForConnection(idSocket, true);
+            waitForConnection(server, false);
          }
          catch(IOException e) {
             System.out.println("Error accepting connection from client");
@@ -41,18 +47,38 @@ public class Server {
       }
    }
    
-   private void waitForIdentification(ServerSocket idSocket) throws IOException {
-      Socket connection = idSocket.accept(); 
-      Runnable idHandler = new IdHandler(connection);
-      new Thread(idHandler).start();
+   private void waitForConnection(ServerSocket socket, boolean authentication) throws IOException {
+      Socket connection = socket.accept(); 
+      ObjectOutputStream output = new ObjectOutputStream(connection.getOutputStream());
+      output.flush();
+      Integer freePort = new Integer(getFreePort());
+      try {
+         output.writeObject(freePort); //sends the message to the server
+         output.close();
+      }
+      catch(IOException e) {
+         System.out.println("Error sending new connect port");
+         e.printStackTrace();
+      }
+      socket = new ServerSocket(freePort.intValue());
+      connection = socket.accept();
+      Runnable handler;
+      if(authentication) {
+         handler = new IdHandler(connection);   
+      }
+      else {
+         handler = new ChatHandler(connection);
+      }
+      new Thread(handler).start();
    }
-   
-   //wait for connection, then once connected give prompt to user
-   private void waitForConnection(ServerSocket server) throws IOException {
-      Socket connection = server.accept(); //once someone asks to connect this accepts the connection to the socket, once connected a connection is created bewteen server and client 
-      Runnable chatHandler = new ChatHandler(connection);
-      new Thread(chatHandler).start(); //is this ineffiencent? would be bad if alot of people tried to connect at once!
-   } 
+
+   private int getFreePort() {
+      int newPort = usedPorts.get(0);
+      while(usedPorts.contains(new Integer(newPort))) {
+         newPort = (int)(Math.random()*9000)+1028; //so we dont get any researved ports
+      }
+      return newPort;
+   }
    
    private class IdHandler extends ConnectionHandler {
       
@@ -91,9 +117,6 @@ public class Server {
          }
       }
    }
-   
-   
-
 
    private class ChatHandler extends ConnectionHandler {
    

@@ -31,8 +31,27 @@ public class MessageHandler {
 	//connect to a server
    public void connectToServer() {
       try {
+         int newPort = 0;
          connection = new Socket(InetAddress.getByName(connectIP), port);
+         ObjectInputStream in = new ObjectInputStream(connection.getInputStream());
+         try {
+            Integer port = (Integer) in.readObject();
+            newPort = port.intValue();
+         }
+         catch(ClassNotFoundException e) {
+            System.out.println("Unknown object sent along stream");
+         }
+         catch(IOException e) {
+            System.out.println("input stream is null");
+         }
+         connection.close();
+         if(newPort == 0) {
+            System.out.println("Error getting port number for connection");
+            System.exit(1);
+         }
+         connection = new Socket(InetAddress.getByName(connectIP), newPort);
          InetAddress inetAddress = connection.getInetAddress();
+
       }
       catch(IOException e) {
          System.out.println("Error connecting to server");
