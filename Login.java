@@ -3,9 +3,12 @@
 
 import javafx.application.Application;
 import javafx.event.ActionEvent;
+import java.net.*;
+
 import javafx.event.EventHandler;
 import static javafx.geometry.HPos.RIGHT;
 import javafx.geometry.Insets;
+import javafx.scene.input.KeyEvent;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
@@ -14,6 +17,7 @@ import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
@@ -36,11 +40,11 @@ public class Login extends Application {
 
    private static final String applicationName = "Instant Messenger-Client";
    private static final String loginWindowName = "JavaIM-Login";
-   private static final String serverIP = "192.168.1.137";
+   private static final String serverIP = "10.83.3.83";
    private String userName; //this clients address
    private String recipient; //whomever this client is currently talking with
    
-   private MessageHandler messageHandler; //message handler for this clients to use for all communication with the server
+   private MessageHandler messageHandler; //Message handler for this clients to use for all communication with the server
    private MessageHandler loginHandler;
    
    private TextArea history;
@@ -124,22 +128,27 @@ public class Login extends Application {
    private void processQuery(TextField userTextField, PasswordField pwBox, Text actiontarget) {
       if(userTextField.getText() != null && !userTextField.getText().isEmpty() &&
          pwBox.getText() != null && !pwBox.getText().isEmpty()) {
-         pwBox.setEditable(false);
-         userTextField.setEditable(false);
          actiontarget.setText("processing...");
          Message loginPacket = new Message(userTextField.getText() + " " + pwBox.getText());
          loginHandler.send(loginPacket);
-         String response = ((Message) loginHandler.readMessage()).getMessage();
+         String response = "";
+         try {
+            response = ((Message) loginHandler.readMessage()).getMessage();
+         }
+         catch(SocketException e) {
+            System.out.println("server terminated connection");
+            System.exit(1);
+         }
          if(response.equals(userTextField.getText())) {
-            userName = response;
             loginHandler.close();
-            openHomePage(response);  
+            openHomePage(response);
          }
          else {
             actiontarget.setText("Incorrect username or password!");
-            pwBox.setEditable(true);
-            userTextField.setEditable(true);
+            pwBox.clear();
          }
+      
+      
             //proccess the username  and password text in some way
             //if the password or user name is incorrect prompt user for new entry and set the field to editable
       }
@@ -156,6 +165,9 @@ public class Login extends Application {
       grid.setHgap(10);
       grid.setVgap(10);
       grid.setPadding(new Insets(25, 25, 25, 25));
+   
+      //TreeView<String> pendingConections = new TreeView<String>();
+      //TreeItem<String> root
    
       Text scenetitle = new Text("Welcome "+userName);
       scenetitle.setId("welcome-text");
@@ -188,7 +200,7 @@ public class Login extends Application {
          
       Scene scene = new Scene(grid);
       primaryStage.setScene(scene);
-   
+      scene.getStylesheets().add(Login.class.getResource("Login.css").toExternalForm()); //adding css style sheet
       primaryStage.show();
    
    
@@ -202,54 +214,68 @@ public class Login extends Application {
       primaryStage = new Stage();
       primaryStage.setTitle("Chat session with: "+recipient);
       primaryStage.getIcons().add(new Image("1462788563_messenger2.png"));
-      GridPane grid = new GridPane();
-      grid.setAlignment(Pos.CENTER);
-      grid.setHgap(10);
-      grid.setVgap(10);
-      grid.setPadding(new Insets(25, 25, 25, 25));
-   
-         
+      
       userText = new TextField();
-      grid.add(userText, 1, 2);
-      
-      
-   
-   
-   
+      userText.setPrefSize(300, 20);
       history = new TextArea();
-      grid.add(history, 1, 1);
+      BorderPane border = new BorderPane();
+      HBox sendBox = new HBox();
+      sendBox.setPadding(new Insets(15, 20, 15, 20));
+      sendBox.setSpacing(10);
+      Button submitB = new Button("Send");
+      submitB.setPrefSize(100,20);
+      sendBox.getChildren().add(userText);
+      sendBox.getChildren().add(submitB);
+      HBox historyBox = new HBox();
+      historyBox.setPadding(new Insets(20));
+      historyBox.getChildren().add(history);
+      
+      border.setBottom(sendBox);
+      border.setCenter(historyBox);
+      
       
       userText.setOnAction(
          new EventHandler<ActionEvent>() {
          
             @Override
             public void handle(ActionEvent e) {
-               Message message = new Message(userText.getText(), recipient, userName);
+               Message message = new Message(userName + ": " + userText.getText(), recipient, userName);
                messageHandler.send(message);
-               updateChatWindow("\n"+userText.getText());
+               updateChatWindow(userName + ": " + message.getMessage()+"\n");
                userText.clear();
             }
          });
+   /*userText.setOnKeyTyped(
+   new EventHandler<KeyEvent>() {
+   
+   	public void handle(KeyEvent key) {
+   		Message message = new Message(key.getCharacter(), recipient, userName);
+   		messageHandler.send(message);
+   		updateChatWindow(key.getCharacter());
+   	}
+   }
+   );*/
       
-      
-      Scene scene = new Scene(grid);
+      Scene scene = new Scene(border, 400, 700);
       primaryStage.setScene(scene);
-      primaryStage.show();
+      scene.getStylesheets().add(Login.class.getResource("Login.css").toExternalForm()); //adding css style sheet
       startRunning();
+      primaryStage.show();
+      
      
       
    
    }
    
    public void startRunning() {
-         messageHandler = new MessageHandler(serverIP, 5678);
-         updateChatWindow("Attempting connection... \n");
+      messageHandler = new MessageHandler(serverIP, 5678);
+      updateChatWindow("Attempting connection... \n");
           //connection will alayws be to the server
-         //after connected to server then you can send messages with intended reciepients and server will proccess
+         //after connected to server then you can send Messages with intended reciepients and server will proccess
          //and send them off to the recipient
          //showMessage("Connected to: " + connection.getHostName()); //TODO fix this showing address thing
-         updateChatWindow("\nThe streams are set up and good to go!\n");         
-         Task<Void> whileChatting = 
+      updateChatWindow("The streams are set up and good to go!\n");         
+      Task<Void> whileChatting = 
             new Task<Void>() {
                @Override protected Void call() {
                   ableToType(true);
@@ -259,11 +285,11 @@ public class Login extends Application {
                         message = (Message) messageHandler.readMessage();
                         updateChatWindow("\n" + message.getMessage());
                      }
-                     while(!message.equals(" - END")); //TODO better exit strategy needed
+                     while(!message.equals("END")); //TODO better exit strategy needed
                      ableToType(false); 
                   }
                   finally {
-                     updateChatWindow("\nClosing stuff down");
+                     updateChatWindow("Closing stuff down\n");
                      messageHandler.close();
                      return null;
                      
@@ -271,25 +297,9 @@ public class Login extends Application {
                
                }
             };
-            Thread th = new Thread(whileChatting);
-            th.setDaemon(true);
-            th.start();
-   }
-   
-   
-   
-   //while chatting with server //cant have this while loop here
-   //javafx doesnt allow loops like this on the main thread need to make a new thread or something to 
-   //handle this aspect of the program use Task i think but its confusing
-   private void whileChatting() throws IOException {
-      ableToType(true);
-      Message message;
-      do {
-         message = (Message) messageHandler.readMessage();
-         updateChatWindow("\n" + message.getMessage());
-      }
-      while(!message.equals(" - END")); //TODO
-      ableToType(false);
+      Thread th = new Thread(whileChatting);
+      th.setDaemon(true);
+      th.start();
    }
 
    
@@ -299,7 +309,7 @@ public class Login extends Application {
       Platform.runLater(
          new Runnable() {
             public void run() {
-               history.appendText(text); //adds message to the chatWindow
+               history.appendText(text); //adds Message to the chatWindow
             }
          }
          );

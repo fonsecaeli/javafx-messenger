@@ -1,7 +1,6 @@
 import java.util.*;
 import java.net.*;
 import java.io.*;
-import java.lang.*;
 
 public class Server {
 
@@ -11,7 +10,7 @@ public class Server {
    
    private Map<String, MessageHandler> connections; //to hold all of the connecitons currently avalible for communication
    private Map<String, String> userIDs; //TODO hash the passwords so they are not exposed
-   private Map<InetAddress, String> userNames;
+   private Map<InetAddress, String> userNames; //should not allow too clients to sign in with the same account because it causes issues because only one of them will recieve messages sent to that account
    private ArrayList<Integer> usedPorts;
    private static int chatPort = 5678;
    private static int idPort = 9999;
@@ -25,7 +24,8 @@ public class Server {
       this.connections = new HashMap<String, MessageHandler>(); //matches user names too messageHandlers so clients can request to chat with people by username instead of ip
       this.userIDs = new HashMap<String, String>();
       this.userNames = new HashMap<InetAddress, String>();
-      userIDs.put("Eli", "Fonseca100");
+      //should import from textfile
+      userIDs.put("Eli", "F");
       userIDs.put("Ravi", "Smith");
       Runnable authenticationThread = new WaitForConnection(true);
       Runnable chatAccepterThread = new WaitForConnection(false);
@@ -66,6 +66,9 @@ public class Server {
             catch(IOException e) {
                System.out.println("Error accepting connection from client");
             }
+            catch(Exception e) {
+               e.printStackTrace();
+            }
          }
       }
 
@@ -75,7 +78,7 @@ public class Server {
          output.flush();
          Integer freePort = new Integer(getFreePort());
          try {
-            output.writeObject(freePort); //sends the message to the server
+            output.writeObject(freePort); //sends the message to the client
             output.close();
          }
          catch(IOException e) {
@@ -120,26 +123,32 @@ public class Server {
                Thread.currentThread().interrupt();
             }
             else {
-               message = (Message) this.clientHandler().readMessage();   
-               if(message != null) {  
-                  Scanner lineScan = new Scanner(message.getMessage());
-                  String userName = lineScan.next();
-                  String password = lineScan.next();
-                  lineScan.close();
-                  String correctPassword = userIDs.get(userName); //eventually will have to unhash to password somehow
-                  Message certification = null;
-                  if(correctPassword != null && correctPassword.equals(password)) {
-                     certification = new Message(userName);
-                     userNames.put(this.sender(), userName);
-                     this.clientHandler().send(certification); //if login in valid send the users username back to them
-                     this.clientHandler().close();
-                     Thread.currentThread().interrupt();
-                  }
-                  else {
-                     this.clientHandler().send(certification);
-                     
-                  }
-               } 
+               try {
+                  message = (Message) this.clientHandler().readMessage();  
+               }  
+               catch(SocketException e) {
+                  e.printStackTrace();
+                  System.out.println("client has terminated connection");
+                  Thread.currentThread().interrupt();
+               }
+               Scanner lineScan = new Scanner(message.getMessage());
+               String userName = lineScan.next();
+               String password = lineScan.next();
+               lineScan.close();
+               String correctPassword = userIDs.get(userName); //eventually will have to unhash to password somehow
+               Message certification = null;
+               if(userNames.get(this.sender()) == null && correctPassword != null && correctPassword.equals(password)) {
+                  certification = new Message(userName);
+                  userNames.put(this.sender(), userName);
+                  this.clientHandler().send(certification); //if login in valid send the users username back to them
+                  this.clientHandler().close();
+                  System.out.println("authorized");
+                  Thread.currentThread().interrupt();
+               }
+               else {
+                  this.clientHandler().send(new Message("incorrect password"));
+                  
+               }
             }  
          }
       }
@@ -168,7 +177,14 @@ public class Server {
                break;
             }
             else {
-               Message toBePushed = (Message) this.clientHandler().readMessage();
+               Message toBePushed = null;
+               try {
+                  toBePushed = (Message) this.clientHandler().readMessage();
+               }
+               catch(SocketException e) {
+                  System.out.println("client terminated connection");
+                  Thread.currentThread().interrupt();
+               }
                if(toBePushed == null) {
                   Thread.currentThread().interrupt(); 
                   break;
@@ -184,7 +200,7 @@ public class Server {
             }
             //Thread.currentThread().sleep(500); //so this thread can yeild resurces to other threads that are running
          }
-         connections.remove(this.sender()); //removes this clients connection from the serves map      
+         connections.remove(userNames.get(this.sender())); //removes this clients connection from the serves map      
       }
    
    }

@@ -81,7 +81,7 @@ public class MessageHandler {
    }
    
    //allows classes using this object to readMessages send
-   public Object readMessage() throws SocketException {
+   public Object readMessage() {
       Object message = null;
       try {
          message = input.readObject(); 
@@ -91,7 +91,7 @@ public class MessageHandler {
       }
       catch(IOException e) {
          System.out.println("input stream is null");
-         e.printStackTrace();
+         //e.printStackTrace();
       }
       return message;
    }
