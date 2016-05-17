@@ -13,7 +13,7 @@ public class Server {
    private Map<String, String> userIDs; //TODO hash the passwords so they are not exposed
    private Map<InetAddress, String> userNames;
    private ArrayList<Integer> usedPorts;
-   private static int chatPort = 5768;
+   private static int chatPort = 5678;
    private static int idPort = 9999;
    
    public Server() {
@@ -27,57 +27,84 @@ public class Server {
       this.userNames = new HashMap<InetAddress, String>();
       userIDs.put("Eli", "Fonseca100");
       userIDs.put("Ravi", "Smith");
-      try {
-         //TODO: random port nums right now will formalize later
-         server = new ServerSocket(chatPort);
-         idSocket = new ServerSocket(idPort);
-      }
-      catch(IOException e) {
-         System.out.println("error binding serversocket to port");
-         System.exit(1);
-      }
-      while(true) {
-         try {
-            waitForConnection(idSocket, true);
-            waitForConnection(server, false);
-         }
-         catch(IOException e) {
-            System.out.println("Error accepting connection from client");
-         }
-      }
+      Runnable authenticationThread = new WaitForConnection(true);
+      Runnable chatAccepterThread = new WaitForConnection(false);
+      new Thread(authenticationThread).start();
+      new Thread(chatAccepterThread).start();
+
    }
    
-   private void waitForConnection(ServerSocket socket, boolean authentication) throws IOException {
-      Socket connection = socket.accept(); 
-      ObjectOutputStream output = new ObjectOutputStream(connection.getOutputStream());
-      output.flush();
-      Integer freePort = new Integer(getFreePort());
-      try {
-         output.writeObject(freePort); //sends the message to the server
-         output.close();
-      }
-      catch(IOException e) {
-         System.out.println("Error sending new connect port");
-         e.printStackTrace();
-      }
-      socket = new ServerSocket(freePort.intValue());
-      connection = socket.accept();
-      Runnable handler;
-      if(authentication) {
-         handler = new IdHandler(connection);   
-      }
-      else {
-         handler = new ChatHandler(connection);
-      }
-      new Thread(handler).start();
-   }
+   
 
-   private int getFreePort() {
-      int newPort = usedPorts.get(0);
-      while(usedPorts.contains(new Integer(newPort))) {
-         newPort = (int)(Math.random()*9000)+1028; //so we dont get any researved ports
+   private class WaitForConnection implements Runnable {
+      private ServerSocket server;
+      private boolean auth;
+
+      public WaitForConnection(boolean auth) {
+         this.auth = auth;
+         try {
+            if(auth) {
+               this.server = new ServerSocket(idPort);
+               System.out.println("id connected");
+            }
+            else {
+               this.server = new ServerSocket(chatPort);
+               System.out.println("chat connected");
+            }
+         }
+         catch(IOException e) {
+            System.out.println("Error binding to port");
+            e.printStackTrace();
+         }
       }
-      return newPort;
+
+      public void run() {
+         while(true) {
+            try {
+               wait(server, auth);
+            }
+            catch(IOException e) {
+               System.out.println("Error accepting connection from client");
+            }
+         }
+      }
+
+      private void wait(ServerSocket socket, boolean authentication) throws IOException {
+         Socket connection = socket.accept(); 
+         ObjectOutputStream output = new ObjectOutputStream(connection.getOutputStream());
+         output.flush();
+         Integer freePort = new Integer(getFreePort());
+         try {
+            output.writeObject(freePort); //sends the message to the server
+            output.close();
+         }
+         catch(IOException e) {
+            System.out.println("Error sending new connect port");
+            e.printStackTrace();
+         }
+         socket = new ServerSocket(freePort.intValue());
+         connection = socket.accept();
+         Runnable handler;
+         if(authentication) {
+            handler = new IdHandler(connection);   
+         }
+         else {
+            handler = new ChatHandler(connection);
+         }
+         new Thread(handler).start();
+         System.out.println("new thread to handle connection created");
+
+      }
+
+      private int getFreePort() {
+         int newPort = usedPorts.get(0);
+         while(usedPorts.contains(new Integer(newPort))) {
+            newPort = (int)(Math.random()*9000)+1028; //so we dont get any researved ports
+            System.out.println("sutible port still not found");
+         }
+         System.out.println("found new port now");
+         return newPort;
+      }
    }
    
    private class IdHandler extends ConnectionHandler {

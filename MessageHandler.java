@@ -28,12 +28,12 @@ public class MessageHandler {
    }
    
    
-	//connect to a server
+   //connect to a server
    public void connectToServer() {
       try {
          int newPort = 0;
-         connection = new Socket(InetAddress.getByName(connectIP), port);
-         ObjectInputStream in = new ObjectInputStream(connection.getInputStream());
+         Socket con = new Socket(InetAddress.getByName(connectIP), port);
+         ObjectInputStream in = new ObjectInputStream(con.getInputStream());
          try {
             Integer port = (Integer) in.readObject();
             newPort = port.intValue();
@@ -44,7 +44,7 @@ public class MessageHandler {
          catch(IOException e) {
             System.out.println("input stream is null");
          }
-         connection.close();
+         con.close();
          if(newPort == 0) {
             System.out.println("Error getting port number for connection");
             System.exit(1);
@@ -55,6 +55,8 @@ public class MessageHandler {
       }
       catch(IOException e) {
          System.out.println("Error connecting to server");
+         e.printStackTrace();
+         System.exit(1);
       }
    
    }
@@ -63,9 +65,12 @@ public class MessageHandler {
       return connection.isClosed() || input == null;
    }
 
-	//setting up streams for the client 
+   //setting up streams for the client 
    public void setupStreams() {
       try {
+         if(connection == null) {
+            System.out.println("Connection null");
+         }
          output = new ObjectOutputStream(connection.getOutputStream());
          output.flush();
          input = new ObjectInputStream(connection.getInputStream());
@@ -91,8 +96,8 @@ public class MessageHandler {
       return message;
    }
 
-	
-	//house keeping, closing all the streams and sockets down
+   
+   //house keeping, closing all the streams and sockets down
    public void close() {
       try {
          output.close();
@@ -144,5 +149,5 @@ public class MessageHandler {
    }
 
 
-	
+   
 }
