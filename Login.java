@@ -9,6 +9,7 @@ import javafx.event.EventHandler;
 import static javafx.geometry.HPos.RIGHT;
 import javafx.geometry.Insets;
 import javafx.scene.input.KeyEvent;
+import javafx.stage.WindowEvent;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
@@ -40,7 +41,7 @@ public class Login extends Application {
 
    private static final String applicationName = "Instant Messenger-Client";
    private static final String loginWindowName = "JavaIM-Login";
-   private static final String serverIP = "10.83.3.83";
+   private static final String serverIP = "10.83.3.83"; //should be public ip address for the server
    private String userName; //this clients address
    private String recipient; //whomever this client is currently talking with
    
@@ -212,6 +213,11 @@ public class Login extends Application {
    public void openChatWindow(String userName, String recipient) {
       primaryStage.close();
       primaryStage = new Stage();
+      primaryStage.setOnCloseRequest(new EventHandler<WindowEvent>() {
+          public void handle(WindowEvent we) {
+                openHomePage(userName);
+          }
+      }); 
       primaryStage.setTitle("Chat session with: "+recipient);
       primaryStage.getIcons().add(new Image("1462788563_messenger2.png"));
       
@@ -241,7 +247,7 @@ public class Login extends Application {
             public void handle(ActionEvent e) {
                Message message = new Message(userName + ": " + userText.getText(), recipient, userName);
                messageHandler.send(message);
-               updateChatWindow(userName + ": " + message.getMessage()+"\n");
+               updateChatWindow(message.getMessage()+"\n");
                userText.clear();
             }
          });
@@ -260,6 +266,8 @@ public class Login extends Application {
       primaryStage.setScene(scene);
       scene.getStylesheets().add(Login.class.getResource("Login.css").toExternalForm()); //adding css style sheet
       startRunning();
+
+
       primaryStage.show();
       
      

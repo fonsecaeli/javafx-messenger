@@ -27,6 +27,8 @@ public class Server {
       //should import from textfile
       userIDs.put("Eli", "F");
       userIDs.put("Ravi", "Smith");
+      userIDs.put("Andrew", "Andrew");
+      userIDs.put("T","C");
       Runnable authenticationThread = new WaitForConnection(true);
       Runnable chatAccepterThread = new WaitForConnection(false);
       new Thread(authenticationThread).start();
