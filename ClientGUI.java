@@ -37,7 +37,7 @@ public class ClientGUI extends Application {
     * ip address of the server, would idealy be the public ip if the server is located on a computer that can be freely accessed
     * but for testing and demo purpose it is set to the local ip of the server on the lakeside wifi
     */
-   private static final String serverIP = "192.168.1.137"; //should be public ip address for the server
+   private static final String serverIP = "10.83.3.83"; //should be public ip address for the server
 
 
    private String userName;
@@ -61,6 +61,7 @@ public class ClientGUI extends Application {
    public void start(Stage primaryStage) {
       this.primaryStage = primaryStage;
       //connect to server, what ever the ip address and port will be predetermined and constant for all clients
+      messageHandler = new MessageHandler(serverIP, 5678);
       loginHandler = new MessageHandler(serverIP, loginPort);    
       openLoginWindow(primaryStage);
    }
@@ -115,7 +116,7 @@ public class ClientGUI extends Application {
             }
          }
          );
-   	//event handler for the login button
+   	//B handler for the login button
       btn.setOnAction(
          new EventHandler<ActionEvent>() {
          
@@ -179,8 +180,16 @@ public class ClientGUI extends Application {
     * homepage gui where a clinet can connect with other users by username 
     */
    public void openHomePage() {
+
+
       primaryStage.hide();
       primaryStage = new Stage();
+      primaryStage.setOnCloseRequest(
+         new EventHandler<WindowEvent>() {
+            public void handle(WindowEvent we) {
+           		messageHandler.close();
+            }
+         }); 
       primaryStage.getIcons().add(new Image("1462788563_messenger2.png"));
       GridPane grid = new GridPane();
       grid.setAlignment(Pos.CENTER);
@@ -297,15 +306,18 @@ public class ClientGUI extends Application {
       Scene scene = new Scene(border, 400, 700);
       primaryStage.setScene(scene);
       scene.getStylesheets().add(ClientGUI.class.getResource("Login.css").toExternalForm()); //adding css style sheet
-      startRunning();
       primaryStage.show();
+      startRunning();
+   }
+
+   public void openConnection() {
+   	messageHandler = new MessageHandler(serverIP, 5678);	
    }
    
    /**
     * sets up all the nessisary detials to connect with the server so you can have a chat with someone
     */
    public void startRunning() {
-      messageHandler = new MessageHandler(serverIP, 5678);
       updateChatWindow("Attempting connection... \n");
           //connection will alayws be to the server
          //after connected to server then you can send Messages with intended reciepients and server will proccess
@@ -326,9 +338,7 @@ public class ClientGUI extends Application {
                      while(!message.equals(message.getMessage().substring(message.getMessage().indexOf(":"))+"END")); //TODO better exit strategy needed
                      ableToType(false); 
                   }
-                  finally {
-                     updateChatWindow("Closing stuff down\n");
-                     messageHandler.close();
+                  finally {        
                      openHomePage();
                      return null;
                      

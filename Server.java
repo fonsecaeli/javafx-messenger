@@ -191,7 +191,10 @@ public class Server {
                   e.printStackTrace();
                   System.out.println("client has terminated connection");
                   Thread.currentThread().interrupt();
-                  userNames.remove(this.sender());
+                  break;
+               }
+               catch(NullPointerException e) {
+                  Thread.currentThread().interrupt();
                   break;
                }
                Scanner lineScan = new Scanner(message.getMessage());
@@ -218,6 +221,9 @@ public class Server {
                   this.clientHandler().send(new Message("Incorrect password or password"));
                   
                }
+               userNames.remove(this.sender());
+               System.out.println("ended1");
+
             }  
          }
       }
@@ -246,21 +252,22 @@ public class Server {
        */
       public void run() {
          connections.put(userNames.get(this.sender()), this.clientHandler());
-         System.out.println("Now connected to "+this.sender().getHostName());
-         Queue<Message> unrmessages = unreadMessages.get(this.sender());
-         if(messages != null) {
+         /*System.out.println("Now connected to "+this.sender().getHostName());
+         if(unreadMessages.get(this.sender()) != null) {
+            Queue<Message> messages = unrmessages.get(this.sender());
             for(int i = 0; i < unrmessages.size(); i++) {
                if(!this.clientHandler().isClosed() && this.clientHandler() != null) {
                   this.clientHandler().send(unrmessages.poll());
                }
             }
-         }
+         }*/
       
          //read in the message object from the 
          //find the right MesasgeHandler in the HashMap for the recipient
          //then push the messages you recieve from the client to the recipient
          while(!Thread.currentThread().isInterrupted()) {
             if(this.clientHandler().isClosed() || this.clientHandler() == null) {
+               removeConnections();
                Thread.currentThread().interrupt();
                System.out.println("chat thread eneded");
                break;
@@ -273,6 +280,7 @@ public class Server {
                catch(SocketException e) {
                   System.out.println("client terminated connection");
                   Thread.currentThread().interrupt();
+                  break;
                }
                if(toBePushed == null) {
                   Thread.currentThread().interrupt(); 
@@ -282,26 +290,33 @@ public class Server {
                if(connections.get(toBePushed.getRecipient()) != null) {
                   recipientHandler = connections.get(toBePushed.getRecipient());
                   recipientHandler.send(toBePushed);
+                  System.out.println("message sent");
                }
                else {
                   this.clientHandler().send(new Message("Message failed to send, "+toBePushed.getRecipient()+" is not online"));
-                  try {
+                  /*try {
                      Queue<Message> messages = new LinkedList<Message>();
                      messages.add(toBePushed);
                      unreadMessages.put(toBePushed.getRecipient(), messages);
                   }
                   catch(Exception e) {
                      unreadMessages.get(toBePushed.getRecipient()).add(toBePushed);
-                  }
+                  }*/
                }
             }
             //Thread.currentThread().sleep(500); //so this thread can yeild resurces to other threads that are running
          }
+         removeConnections();
+
+      }
+
+      private void removeConnections() {
          connections.remove(userNames.get(this.sender())); //removes this clients connection from the serves map 
          userNames.remove(this.sender());
          usedPorts.remove(this.clientHandler().getPort());
-
+         System.out.println("ended2");
       }
+
    
    }
    
