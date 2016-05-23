@@ -1,164 +1,372 @@
-import java.io.ObjectOutputStream;
-import java.io.ObjectInputStream;
-import java.io.IOException;
-import java.io.EOFException;
-import java.net.Socket;
-import java.net.ServerSocket;
-import java.net.InetAddress;
-import java.awt.BorderLayout;
-import java.awt.Font;
-import java.awt.event.ActionListener;
-import java.awt.event.ActionEvent;
-import javax.swing.JFrame;
-import javax.swing.JTextField;
-import javax.swing.JTextArea;
-import javax.swing.JMenuBar;
-import javax.swing.JMenuItem;
-import javax.swing.JMenu;
-import javax.swing.JScrollPane;
-import javax.swing.SwingUtilities;
+// Eli F.
+// Section: C
+// Final Project
+// Description: main class that takes care of the GUI for the client, uses supporting classes for messeging logic
+// Class name: ClientGUI
+// Version 1.0
+// 5/22/16
 
-public class ClientGUI extends JFrame {
+import javafx.application.*;
+import java.net.*;
+import javafx.event.*;
+import static javafx.geometry.HPos.RIGHT;
+import javafx.scene.input.*;
+import javafx.stage.*;
+import javafx.geometry.*;
+import javafx.scene.*;
+import javafx.scene.control.*;
+import javafx.scene.layout.*;
+import javafx.scene.paint.*;
+import javafx.scene.text.*;
+import javafx.scene.image.*;
+import javafx.stage.*;
+import javafx.scene.control.*;
+import javafx.application.*;
+import javafx.concurrent.*;
+import java.io.*;
+import java.net.*;
 
-   public static void main(String[] args) {
-      ClientGUI c = new ClientGUI();
-   }
+public class ClientGUI extends Application {
 
-   private JTextField userText;
-   private JTextArea chatHistory;
-   private MessageHandler messageHandler;
+	/**
+	 * name that goes at the top of the GUI window
+	 */
+   private static final String loginWindowName = "JavaIM-Login";
 
-   private static final int height = 2000;
-   private static final int length = 2000;
-   private static final String applicationName = "Instant Messenger-Client";
+   /**
+    * ip address of the server, would idealy be the public ip if the server is located on a computer that can be freely accessed
+    * but for testing and demo purpose it is set to the local ip of the server on the lakeside wifi
+    */
+   private static final String serverIP = "192.168.1.137"; //should be public ip address for the server
 
 
-   public ClientGUI() {
-      super(applicationName);
-      setupMenus();
-      userText = new JTextField();
-      userText.setEditable(false);
-      userText.addActionListener(new UserTextListener());
-      add(userText, BorderLayout.NORTH);
-      chatHistory = new JTextArea();
-      chatHistory.setEditable(false);
-      add(new JScrollPane(chatHistory), BorderLayout.CENTER);
-      setSize(height, length);
-      setVisible(true);
-      chatHistory.setFont(new Font("Serif", Font.PLAIN, 30));
-      userText.setFont(new Font("Serif", Font.PLAIN, 30));
-      startRunning();
+   private String userName;
+   private String recipient; //whomever this client is currently talking with
+	MessageHandler messageHandler; //Message handler for this clients to use for all communication with the server
+   private MessageHandler loginHandler;
+   private int loginPort = 9999;
+   private int chatPort = 5678;
+   
+   //gui components that need to be easily accessed by differnt part of the program
+   private TextArea history;
+   private TextField userText;
+   private Stage primaryStage;
+   
+
+   @Override
+   /**
+    * the "main" method for a javafx application, the entry point into the program where it all begins...
+    * @param primaryStage the main container object for GUI components
+    */
+   public void start(Stage primaryStage) {
+      this.primaryStage = primaryStage;
+      //connect to server, what ever the ip address and port will be predetermined and constant for all clients
+      loginHandler = new MessageHandler(serverIP, loginPort);    
+      openLoginWindow(primaryStage);
    }
    
-   private class UserTextListener implements ActionListener {
-      public void actionPerformed(ActionEvent event) {
-         String message = event.getActionCommand();
-         if(!message.equals("")) {
-            try {
-               messageHandler.send(new Message(message, InetAddress.getByName("127.0.0.1"), InetAddress.getByName("127.0.0.1"))); //for testing purposes only
-               showMessage(message+"\n"); //shows message in the users chat window
-            }
-            catch(IOException e) {
-               chatHistory.setEditable(true);
-               chatHistory.append("\nSomething messed up sending message");
-               chatHistory.setEditable(false);
+   
+   public void openLoginWindow(Stage primaryStage) {
+      primaryStage.setTitle(loginWindowName);
+      primaryStage.getIcons().add(new Image("1462788563_messenger2.png"));
+      GridPane grid = new GridPane();
+      grid.setAlignment(Pos.CENTER);
+      grid.setHgap(10);
+      grid.setVgap(10);
+      grid.setPadding(new Insets(25, 25, 25, 25));
+   
+      Text scenetitle = new Text("JavaIM");
+      scenetitle.setId("welcome-text");
+      grid.add(scenetitle, 0, 0, 2, 1);
+   
+      Label userName = new Label("User Name:");
+      grid.add(userName, 0, 1);
+   
+      TextField userTextField = new TextField();
+      grid.add(userTextField, 1, 1);
+   
+      Label pw = new Label("Password:");
+      grid.add(pw, 0, 2);
+   
+      PasswordField pwBox = new PasswordField();
+      grid.add(pwBox, 1, 2);
+      
+         
+      Button btn = new Button("Sign in");
+      HBox hbBtn = new HBox(10);
+      hbBtn.setAlignment(Pos.BOTTOM_RIGHT);
+      hbBtn.getChildren().add(btn);
+      grid.add(hbBtn, 1, 4);
+   
+      final Text actiontarget = new Text();
+      grid.add(actiontarget, 0, 6);
+      actiontarget.setId("actiontarget");
+      grid.setColumnSpan(actiontarget, 2);
+      grid.setHalignment(actiontarget, RIGHT);
+      actiontarget.setId("actiontarget");
+      
+      //event handler for the password field
+      pwBox.setOnAction(
+         new EventHandler<ActionEvent>() {
+
+         	@Override
+            public void handle(ActionEvent e) {
+               processQuery(userTextField, pwBox, actiontarget);
             }
          }
-         userText.setText("");
+         );
+   	//event handler for the login button
+      btn.setOnAction(
+         new EventHandler<ActionEvent>() {
+         
+            @Override
+            public void handle(ActionEvent e) {
+               processQuery(userTextField, pwBox, actiontarget);
+            }
+         });
+   
+      Scene scene = new Scene(grid, 300, 275);
+      primaryStage.setScene(scene);
+      scene.getStylesheets().add(ClientGUI.class.getResource("Login.css").toExternalForm()); //adding css style sheet
+      primaryStage.show();
+   }
+   
+   /**
+    * processes a users input into the login and password fields of the login in page
+    * asks the server to authenticate and then informs the client if they have been authenticated or not
+    * 
+    * @param userTextField username entry box
+    * @param pwBox         password entry box
+    * @param actiontarget  text that tells the user what the response from the server was
+    */
+   private void processQuery(TextField userTextField, PasswordField pwBox, Text actiontarget) {
+      if(userTextField.getText() != null && !userTextField.getText().isEmpty() &&
+         pwBox.getText() != null && !pwBox.getText().isEmpty()) {
+         actiontarget.setText("processing...");
+         Message loginPacket = new Message(userTextField.getText() + " " + pwBox.getText());
+         loginHandler.send(loginPacket);
+         String response = "";
+         try {
+            response = ((Message) loginHandler.readMessage()).getMessage();
+         }
+         catch(SocketException e) {
+            actiontarget.setText("server has gone offline at this time, please try again later.");
+            try {
+            	Thread.currentThread().sleep(100000);
+            }
+            catch(Exception ex) {}
+            System.exit(1);
+         }
+         catch(Exception e) {
+            e.printStackTrace();
+         }
+         if(response.equals(userTextField.getText())) {
+            loginHandler.close();
+            userName = response;
+            openHomePage();
+         }
+         else {
+            actiontarget.setText(response);
+            pwBox.clear();
+         }
+      }
+      else {
+         actiontarget.setText("Invalid username or password!");
       }
    }
 
-   private void setupMenus() {
-      JMenuBar menubar = new JMenuBar();
-      JMenu options = new JMenu("Options");
-      JMenuItem exit = new JMenuItem("Exit");
-      options.add(exit);
-      menubar.add(options);
+   /**
+    * homepage gui where a clinet can connect with other users by username 
+    */
+   public void openHomePage() {
+      primaryStage.hide();
+      primaryStage = new Stage();
+      primaryStage.getIcons().add(new Image("1462788563_messenger2.png"));
+      GridPane grid = new GridPane();
+      grid.setAlignment(Pos.CENTER);
+      grid.setHgap(10);
+      grid.setVgap(10);
+      grid.setPadding(new Insets(25, 25, 25, 25));
    
-      JMenu help = new JMenu("Help");
-      JMenuItem about = new JMenuItem("About");
-      help.add(about);
-      menubar.add(help);
+      Text scenetitle = new Text("Welcome "+userName);
+      scenetitle.setId("welcome-text");
+      grid.add(scenetitle, 0, 0, 2, 1);
    
-      exit.addActionListener(
-         new ActionListener() {
-            public void actionPerformed(ActionEvent event) {
-               System.exit(0);
+      Label connectTo = new Label("Connect to:");
+      grid.add(connectTo, 0, 1);
+   
+      TextField recipient = new TextField();
+      grid.add(recipient, 1, 1);
+         
+      Button btn = new Button("Connect");
+      HBox hbBtn = new HBox(10);
+      hbBtn.setAlignment(Pos.BOTTOM_RIGHT);
+      hbBtn.getChildren().add(btn);
+      grid.add(hbBtn, 1, 4);
+
+      recipient.setOnAction(
+      	new EventHandler<ActionEvent>() {
+
+         	@Override
+            public void handle(ActionEvent e) {
+             if(recipient.getText() != null) {
+                  openChatWindow(recipient.getText());
+               }
             }
          });
-   
-      about.addActionListener(
-         new ActionListener() {
-            public void actionPerformed(ActionEvent event) {
-               openReadme();
+      
+      //listner for the submit button
+      btn.setOnAction(
+         new EventHandler<ActionEvent>() {
+         
+            @Override
+            public void handle(ActionEvent e) {
+               //need to add error handleling for non valid ip address
+               if(recipient.getText() != null) {
+                  openChatWindow(recipient.getText());
+               }
             }
          });
-      setJMenuBar(menubar);
-   }	
-   
-   //opens readme file
-   private void openReadme() {
-      try {
-         ProcessBuilder pb = new ProcessBuilder("Notepad.exe", "Readme.txt");
-         pb.start();
-      }
-      catch(IOException e) {
-         e.printStackTrace();
-      }
+         
+      Scene scene = new Scene(grid);
+      primaryStage.setScene(scene);
+      scene.getStylesheets().add(ClientGUI.class.getResource("Login.css").toExternalForm()); //adding css style sheet
+      primaryStage.show();
    }
    
-   //connect to server 
+   /**
+    * opens a chat window with a specified user
+    *
+    * @param recipient the username of the person the client is chatting with will be displayed for reference
+    */
+   public void openChatWindow(String recipient) {
+      primaryStage.close();
+      primaryStage = new Stage();
+      primaryStage.setOnCloseRequest(
+         new EventHandler<WindowEvent>() {
+            public void handle(WindowEvent we) {
+               openHomePage();
+            }
+         }); 
+      primaryStage.setTitle("Chat session with: "+recipient);
+      primaryStage.getIcons().add(new Image("1462788563_messenger2.png"));
+      
+      userText = new TextField();
+      userText.setPrefSize(300, 20);
+      history = new TextArea();
+      history.setEditable(false);
+      BorderPane border = new BorderPane();
+      HBox sendBox = new HBox();
+      sendBox.setPadding(new Insets(15, 20, 15, 20));
+      sendBox.setSpacing(10);
+      Button submitB = new Button("Send");
+      submitB.setPrefSize(100,20);
+      sendBox.getChildren().add(userText);
+      sendBox.getChildren().add(submitB);
+      HBox historyBox = new HBox();
+      historyBox.setPadding(new Insets(20));
+      historyBox.getChildren().add(history);
+      
+      border.setBottom(sendBox);
+      border.setCenter(historyBox);
+      
+      
+      userText.setOnAction(
+         new EventHandler<ActionEvent>() {
+         
+            @Override
+            public void handle(ActionEvent e) {
+               Message message = new Message(userName + ": " + userText.getText(), recipient, userName);
+               messageHandler.send(message);
+               updateChatWindow(message.getMessage()+"\n");
+               userText.clear();
+            }
+         });
+      //was considering adding a send as you type feature, like live text so what ever you typed automaticaly got sent
+   /*userText.setOnKeyTyped(
+   new EventHandler<KeyEvent>() {
+   
+   	public void handle(KeyEvent key) {
+   		Message message = new Message(key.getCharacter(), recipient, userName);
+   		messageHandler.send(message);
+   		updateChatWindow(key.getCharacter());
+   	}
+   }
+   );*/
+      
+      Scene scene = new Scene(border, 400, 700);
+      primaryStage.setScene(scene);
+      scene.getStylesheets().add(ClientGUI.class.getResource("Login.css").toExternalForm()); //adding css style sheet
+      startRunning();
+      primaryStage.show();
+   }
+   
+   /**
+    * sets up all the nessisary detials to connect with the server so you can have a chat with someone
+    */
    public void startRunning() {
-      try {
-         showMessage("Attempting connection... \n");
-         messageHandler = new MessageHandler("127.0.0.1", 5678); //connection will alayws be to the server
-         //after connected to server then you can send messages with intended reciepients and server will proccess
+      messageHandler = new MessageHandler(serverIP, 5678);
+      updateChatWindow("Attempting connection... \n");
+          //connection will alayws be to the server
+         //after connected to server then you can send Messages with intended reciepients and server will proccess
          //and send them off to the recipient
          //showMessage("Connected to: " + connection.getHostName()); //TODO fix this showing address thing
-         showMessage("\nThe streams are set up and good to go!\n");         
-         whileChatting();
-      }
-      catch(EOFException e) {
-         showMessage("\nClient terminated connection");
-      
-      }
-      catch(IOException e2) {
-         e2.printStackTrace();
-      }
-      finally {
-         showMessage("\nClosing stuff down");
-         messageHandler.closeStuff();
-         
-      }
-   }
-   
-   //while chatting with server 
-   private void whileChatting() throws IOException {
-      ableToType(true);
-      Message message;
-      do {
-         message = (Message) messageHandler.readMessage();
-         showMessage("\n" + message.getMessage());
-      }
-      while(!message.equals(" - END")); //TODO
-      ableToType(false);
+      updateChatWindow("The streams are set up and good to go!\n");   
+      //have to run the task of checking for incoming messages on its own seperate thread because otherwise it would freeze the gui      
+      Task<Void> whileChatting = 
+            new Task<Void>() {
+               @Override protected Void call() {
+                  ableToType(true);
+                  try {
+                     Message message;
+                     do {
+                        message = (Message) messageHandler.readMessage();
+                        updateChatWindow(message.getMessage()+"\n");
+                     }
+                     while(!message.equals(message.getMessage().substring(message.getMessage().indexOf(":"))+"END")); //TODO better exit strategy needed
+                     ableToType(false); 
+                  }
+                  finally {
+                     updateChatWindow("Closing stuff down\n");
+                     messageHandler.close();
+                     openHomePage();
+                     return null;
+                     
+                  }
+               
+               }
+            };
+      Thread th = new Thread(whileChatting);
+      th.setDaemon(true);
+      th.start();
    }
 
    
-   //updates chatWindow
-   private void showMessage(final String text) {
+   /**
+    * updates the chatHistory window with a given String
+    * 
+    * @param text the text to be displayed on the chat history box
+    */
+   private void updateChatWindow(final String text) {
    	//setting aside a thread to update a gui, so we dont have to create an entire new gui when we just want to update part
-      SwingUtilities.invokeLater(
+      Platform.runLater(
          new Runnable() {
             public void run() {
-               chatHistory.append(text); //adds message to the chatWindow
+               history.setEditable(true);
+               history.appendText(text); //adds Message to the chatWindow
+               history.setEditable(false);
             }
          }
          );
    }
 
+   /**
+    * sets the users input box to able to type or not
+    * 
+    * @param trueOrFalse if the user should be able to type or not
+    */
    private void ableToType(final boolean trueOrFalse) {
-         SwingUtilities.invokeLater(
+      Platform.runLater(
             new Runnable() {
                public void run() {
                   userText.setEditable(trueOrFalse);
@@ -166,8 +374,14 @@ public class ClientGUI extends JFrame {
             }
             );
    }
-} 
 
+   /**
+    * entry point into the program, calls the start method (the one at the top) and sets everything in motion
+    * 
+    * @param args input from the console
+    */
+   public static void main(String[] args) {
+      launch(args);
+   }
 
-   
-   
+}
