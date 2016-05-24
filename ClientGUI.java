@@ -37,7 +37,7 @@ public class ClientGUI extends Application {
     * ip address of the server, would idealy be the public ip if the server is located on a computer that can be freely accessed
     * but for testing and demo purpose it is set to the local ip of the server on the lakeside wifi
     */
-   private static final String serverIP = "10.83.3.83"; //should be public ip address for the server
+   private static final String serverIP = "192.168.1.137"; //should be public ip address for the server
 
 
    private String userName;
@@ -238,6 +238,7 @@ public class ClientGUI extends Application {
          });
          
       Scene scene = new Scene(grid);
+      primaryStage.setMaximized(true);
       primaryStage.setScene(scene);
       scene.getStylesheets().add(ClientGUI.class.getResource("Login.css").toExternalForm()); //adding css style sheet
       primaryStage.show();
