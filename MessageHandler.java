@@ -125,6 +125,13 @@ public class MessageHandler {
       Object message = null;
       try {
          message = input.readObject(); 
+         System.out.println("recieved "+((Message) message).getMessage()); 
+         System.out.println("outputStream: "+connection.getInputStream());
+         System.out.println("ip: "+connection.getInetAddress());
+         System.out.println("isClosed: "+connection.isClosed());
+         System.out.println("isConnected: "+connection.isConnected());
+         System.out.println("isInputshutdown: "+connection.isInputShutdown());
+         System.out.println("isOutputShutdown: "+ connection.isOutputShutdown());
       }
       catch(ClassNotFoundException e) {
          System.out.println("Unknown object sent along stream");
@@ -159,7 +166,15 @@ public class MessageHandler {
    public void send(Message message) {
       try {
          output.writeObject(message); //sends the message to the server
-         output.flush(); 
+         output.flush();
+         /*System.out.println("tried to send, "+message.getMessage()); 
+         System.out.println("outputStream: "+connection.getOutputStream());
+         System.out.println("ip: "+connection.getInetAddress());
+         System.out.println("isClosed: "+connection.isClosed());
+         System.out.println("isConnected: "+connection.isConnected());
+         System.out.println("isInputshutdown: "+connection.isInputShutdown());
+         System.out.println("isOutputShutdown: "+ connection.isOutputShutdown());*/
+
       }
       catch(IOException e) {
          System.out.println("Error sending message");
@@ -168,7 +183,7 @@ public class MessageHandler {
    }
    
    //just used for testing, Message objects will be the actuall data that is being sent between server and client
-   public void send(String message) {
+   /*public void send(String message) {
       try {
          output.writeObject(message);
          output.flush();
@@ -176,7 +191,7 @@ public class MessageHandler {
       catch(IOException e) {
          System.out.println("Error sending message, check input and output streams are null");
       }
-   }
+   }*/
    
    /**
     * possibly useful for later iterations of this program, a method to get the public ip address of the machine this handler 

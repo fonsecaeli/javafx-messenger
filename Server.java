@@ -41,9 +41,9 @@ public class Server {
       usedPorts.add(new Integer(chatPort));
       ServerSocket server = null;
       ServerSocket idSocket = null;
-      this.connections = new HashMap<String, MessageHandler>(); //matches user names too messageHandlers so clients can request to chat with people by username instead of ip
-      this.userIDs = new HashMap<String, String>();
-      this.userNames = new HashMap<InetAddress, String>();
+      this.connections = new HashMap<>(); //matches user names too messageHandlers so clients can request to chat with people by username instead of ip
+      this.userIDs = new HashMap<>();
+      this.userNames = new HashMap<>();
       //naive approach to have a list of registered users
       //some other program needs to be written to handle new users who want to sign up for an account
       userIDs.put("Eli", "F");
@@ -96,6 +96,7 @@ public class Server {
             }
             catch(IOException e) {
                System.out.println("Error accepting connection from client");
+               e.printStackTrace();
             }
             catch(Exception e) {
                e.printStackTrace();
@@ -128,6 +129,7 @@ public class Server {
             e.printStackTrace();
          }
          socket = new ServerSocket(freePort.intValue());
+         usedPorts.add(freePort);
          connection = socket.accept();
          Runnable handler;
          if(authentication) {
@@ -147,10 +149,10 @@ public class Server {
        * @return a free port
        */
       private int getFreePort() {
-         int newPort = usedPorts.get(0);
+         int minPort = 1028;
+         int maxPort = 9000;
+         int newPort = (int)(Math.random()*maxPort)+minPort;
          while(usedPorts.contains(new Integer(newPort))) {
-            int minPort = 1028;
-            int maxPort = 9000;
             newPort = (int)(Math.random()*maxPort)+minPort; //so we dont get any researved ports
             System.out.println("sutible port still not found");
          }
@@ -218,11 +220,11 @@ public class Server {
                   System.out.println("access denied");
                }
                else {
-                  this.clientHandler().send(new Message("Incorrect password or password"));
+                  this.clientHandler().send(new Message("Incorrect password or username"));
                   
                }
-               userNames.remove(this.sender());
-               System.out.println("ended1");
+               //userNames.remove(this.sender());
+               //System.out.println("ended1");
 
             }  
          }
@@ -235,7 +237,6 @@ public class Server {
    private class ChatHandler extends ConnectionHandler {
    
       private MessageHandler recipientHandler;
-      private Queue<Message> messages;
       
       /**
        * constructor for ChatHandler
@@ -266,8 +267,8 @@ public class Server {
          //find the right MesasgeHandler in the HashMap for the recipient
          //then push the messages you recieve from the client to the recipient
          while(!Thread.currentThread().isInterrupted()) {
+            System.out.println(connections);
             if(this.clientHandler().isClosed() || this.clientHandler() == null) {
-               removeConnections();
                Thread.currentThread().interrupt();
                System.out.println("chat thread eneded");
                break;
@@ -283,9 +284,10 @@ public class Server {
                   break;
                }
                if(toBePushed == null) {
+                  System.out.println("stuff messed up");
                   Thread.currentThread().interrupt(); 
                   break;
-               }  
+               } 
                System.out.println(toBePushed.getMessage());      
                if(connections.get(toBePushed.getRecipient()) != null) {
                   recipientHandler = connections.get(toBePushed.getRecipient());
@@ -294,6 +296,8 @@ public class Server {
                }
                else {
                   this.clientHandler().send(new Message("Message failed to send, "+toBePushed.getRecipient()+" is not online"));
+                  System.out.println("message failed to send");
+                  //System.out.println(connections);
                   /*try {
                      Queue<Message> messages = new LinkedList<Message>();
                      messages.add(toBePushed);

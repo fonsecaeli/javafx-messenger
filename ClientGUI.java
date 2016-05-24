@@ -37,7 +37,7 @@ public class ClientGUI extends Application {
     * ip address of the server, would idealy be the public ip if the server is located on a computer that can be freely accessed
     * but for testing and demo purpose it is set to the local ip of the server on the lakeside wifi
     */
-   private static final String serverIP = "192.168.1.137"; //should be public ip address for the server
+   private static final String serverIP = "10.83.3.83"; //should be public ip address for the server
 
 
    private String userName;
@@ -61,7 +61,6 @@ public class ClientGUI extends Application {
    public void start(Stage primaryStage) {
       this.primaryStage = primaryStage;
       //connect to server, what ever the ip address and port will be predetermined and constant for all clients
-      messageHandler = new MessageHandler(serverIP, 5678);
       loginHandler = new MessageHandler(serverIP, loginPort);    
       openLoginWindow(primaryStage);
    }
@@ -162,6 +161,7 @@ public class ClientGUI extends Application {
             e.printStackTrace();
          }
          if(response.equals(userTextField.getText())) {
+         	messageHandler = new MessageHandler(serverIP, 5678); //opening handler for the chat that will follow
             loginHandler.close();
             userName = response;
             openHomePage();
@@ -319,12 +319,12 @@ public class ClientGUI extends Application {
     * sets up all the nessisary detials to connect with the server so you can have a chat with someone
     */
    public void startRunning() {
-      updateChatWindow("Attempting connection... \n");
+      //updateChatWindow("Attempting connection... \n");
           //connection will alayws be to the server
          //after connected to server then you can send Messages with intended reciepients and server will proccess
          //and send them off to the recipient
          //showMessage("Connected to: " + connection.getHostName()); //TODO fix this showing address thing
-      updateChatWindow("The streams are set up and good to go!\n");   
+      //updateChatWindow("The streams are set up and good to go!\n");   
       //have to run the task of checking for incoming messages on its own seperate thread because otherwise it would freeze the gui      
       Task<Void> whileChatting = 
             new Task<Void>() {
@@ -335,8 +335,10 @@ public class ClientGUI extends Application {
                      do {
                         message = (Message) messageHandler.readMessage();
                         updateChatWindow(message.getMessage()+"\n");
+                        System.out.println(message.getMessage());
                      }
                      while(!message.equals(message.getMessage().substring(message.getMessage().indexOf(":"))+"END")); //TODO better exit strategy needed
+                    	System.out.println("endedEarly");
                      ableToType(false); 
                   }
                   finally {        
