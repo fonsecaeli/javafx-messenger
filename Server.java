@@ -8,6 +8,7 @@
 
 import java.io.IOException;
 import java.io.ObjectOutputStream;
+import java.io.StreamCorruptedException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -16,6 +17,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.stream.Stream;
 
 public class Server {
 
@@ -303,7 +305,7 @@ public class Server {
                     }
                     else {
                         System.out.print("Client Handler: "+this.clientHandler());
-                        this.clientHandler().send(new Message("Message failed to send, recipient is not online"));
+                        this.clientHandler().send(new Message("Message failed to send, "+toBePushed.getRecipient()+" is not online"));
                         System.out.println("message failed to send");
                         //System.out.println(connections);
                         //unfinished message queue features code

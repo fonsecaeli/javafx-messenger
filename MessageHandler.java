@@ -135,8 +135,7 @@ public class MessageHandler {
         }
         catch(ClassNotFoundException e) {
             System.out.println("Unknown object sent along stream");
-        }
-        catch(IOException e) {
+        } catch(IOException e) {
             System.out.println("input stream is null");
             e.printStackTrace();
         }

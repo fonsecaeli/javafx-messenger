@@ -13,4 +13,12 @@ How to use this program:
     Amanda O'Neal
 4. After you are authenticated by the Server you can connect to other users by user name, just enter the user name you want to
 connect to and a new chat session will open.  If the other user is connected you will be able to chat back and forth
+5. If the person you are trying to communicate with is not online then your messages will not be process and you will receive
+a message informing you that the other client is not online.
+
+Known Bugs:
+If you are in a chat with someone who is offline, and then you close chat window and then connect back to the same person
+a StreamCorruptedException is thrown.  After this point the program is in a bad state.  I have not figured out how to fix this bug
+yet so at the moment I am letting the Exception to be thrown.  Users will have to restart the program in order to begin chatting again
+
 
