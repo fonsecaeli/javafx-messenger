@@ -8,7 +8,6 @@
 
 import java.io.IOException;
 import java.io.ObjectOutputStream;
-import java.io.StreamCorruptedException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -17,7 +16,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
-import java.util.stream.Stream;
 
 public class Server {
 
@@ -44,7 +42,7 @@ public class Server {
      * basically just hogs 2 thread and waits for connections and then spins threads off to handle those connections
      */
     public Server() {
-        usedPorts = new ArrayList<Integer>();
+        usedPorts = new ArrayList<>();
         usedPorts.add(idPort);
         usedPorts.add(chatPort);
         ServerSocket server = null;
@@ -191,7 +189,7 @@ public class Server {
                     Thread.currentThread().interrupt();
                 }
                 else {
-                    Message message = null;
+                    Message message;
                     try {
                         message = (Message) this.clientHandler().readMessage();
                         System.out.println(message.getMessage());
@@ -211,7 +209,7 @@ public class Server {
                     String password = lineScan.next();
                     lineScan.close();
                     String correctPassword = userIDs.get(userName); //eventually will have to unhash to password somehow
-                    Message certification = null;
+                    Message certification;
                     if(userNames.get(this.sender()) == null && correctPassword != null && correctPassword.equals(password)) {
                         certification = new Message(userName);
                         userNames.put(this.sender(), userName);
