@@ -6,29 +6,24 @@
 // Version 1.0
 // 5/22/16
 
-import javafx.application.*;
-import java.net.*;
-import javafx.event.*;
+import javafx.application.Application;
+import javafx.application.Platform;
+import javafx.concurrent.Task;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.control.*;
+import javafx.scene.image.Image;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.text.Text;
+import javafx.stage.Stage;
 
-import static java.lang.Thread.*;
+import java.net.SocketException;
+
+import static java.lang.Thread.currentThread;
 import static javafx.geometry.HPos.RIGHT;
-import javafx.scene.input.*;
-import javafx.stage.*;
-import javafx.geometry.*;
-import javafx.scene.*;
-import javafx.scene.control.*;
-import javafx.scene.layout.*;
-import javafx.scene.paint.*;
-import javafx.scene.text.*;
-import javafx.scene.image.*;
-import javafx.stage.*;
-import javafx.scene.control.*;
-import javafx.application.*;
-import javafx.concurrent.*;
-import org.jetbrains.annotations.Nullable;
-
-import java.io.*;
-import java.net.*;
 
 public class ClientGUI extends Application {
 
@@ -38,11 +33,10 @@ public class ClientGUI extends Application {
     private static final String loginWindowName = "JavaIM-Login";
 
     /**
-     * ip address of the server, would idealy be the public ip if the server is located on a computer that can be freely ACCESSED
+     * ip address of the server, would ideally be the public ip if the server is located on a computer that can be freely ACCESSED
      * but for testing and demo purpose it is set to the local ip of the server on the lakeside wifi
      */
-    private static final String serverIP = "192.168.1.137";//""10.83.3.83"; //should be public ip address for the server
-
+    private static final String serverIP = /*"192.168.1.137";*/"10.83.3.83"; //should be public ip address for the server
 
     private String userName;
     private String recipient; //whomever this client is currently talking with
@@ -140,8 +134,9 @@ public class ClientGUI extends Application {
             }
             catch(SocketException e) {
                 actiontarget.setText("server has gone offline at this time, please try again later.");
+                //should not let the user connect if the server goes offline
                 try {
-                    currentThread().sleep(100000);
+                    currentThread().sleep(10000);
                 }
                 catch(Exception ex) {}
                 System.exit(1);
@@ -166,11 +161,9 @@ public class ClientGUI extends Application {
     }
 
     /**
-     * homepage gui where a clinet can connect with other users by username
+     * opens homepage frame where a client can connect with other users by username
      */
     public void openHomePage() {
-
-
         primaryStage.hide();
         primaryStage = new Stage();
         primaryStage.setOnCloseRequest(we -> messageHandler.close());
@@ -197,6 +190,7 @@ public class ClientGUI extends Application {
         hbBtn.getChildren().add(btn);
         grid.add(hbBtn, 1, 4);
 
+        //listener for the connect text field
         recipient.setOnAction(
                 e -> {
                     if(recipient.getText() != null) {
@@ -204,7 +198,7 @@ public class ClientGUI extends Application {
                     }
                 });
 
-        //listner for the submit button
+        //listener for the submit button
         btn.setOnAction(
                 e -> {
                     //need to add error handleling for non valid ip address
@@ -227,12 +221,7 @@ public class ClientGUI extends Application {
     public void openChatWindow(String recipient) {
         primaryStage.close();
         primaryStage = new Stage();
-        primaryStage.setOnCloseRequest(
-                new EventHandler<WindowEvent>() {
-                    public void handle(WindowEvent we) {
-                        openHomePage();
-                    }
-                });
+        primaryStage.setOnCloseRequest(we -> openHomePage());
         primaryStage.setTitle("Chat session with: "+recipient);
         primaryStage.getIcons().add(new Image("1462788563_messenger2.png"));
 
@@ -264,16 +253,16 @@ public class ClientGUI extends Application {
                     userText.clear();
                 });
         //was considering adding a send as you type feature, like live text so what ever you typed automaticaly got sent
-       /*userText.setOnKeyTyped(
-       new EventHandler<KeyEvent>() {
+        /*userText.setOnKeyTyped(
+        new EventHandler<KeyEvent>() {
 
         public void handle(KeyEvent key) {
             Message message = new Message(key.getCharacter(), recipient, userName);
             messageHandler.send(message);
             updateChatWindow(key.getCharacter());
         }
-       }
-       );*/
+        }
+        );*/
 
         Scene scene = new Scene(border, 400, 700);
         primaryStage.setScene(scene);
@@ -283,19 +272,20 @@ public class ClientGUI extends Application {
     }
 
     /**
-     * sets up all the nessisary detials to connect with the server so you can have a chat with someone
+     * sets up all the necessary details to connect with the server so you can have a chat with someone
      */
     public void startRunning() {
-        //updateChatWindow("Attempting connection... \n");
-        //connection will alayws be to the server
-        //after connected to server then you can send Messages with intended reciepients and server will proccess
-        //and send them off to the recipient
-        //showMessage("Connected to: " + connection.getHostName()); //TODO fix this showing address thing
-        //updateChatWindow("The streams are set up and good to go!\n");
-        //have to run the task of checking for incoming messages on its own seperate thread because otherwise it would freeze the gui
+        /*
+        updateChatWindow("Attempting connection... \n");
+        connection will always be to the server
+        after connected to server then you can send Messages with intended reciepients and server will proccess
+        and send them off to the recipient
+        showMessage("Connected to: " + connection.getHostName()); //TODO fix this showing address thing
+        updateChatWindow("The streams are set up and good to go!\n");
+        have to run the task of checking for incoming messages on its own seperate thread because otherwise it would freeze the gui
+        */
         Task<Void> whileChatting =
                 new Task<Void>() {
-                    @Nullable
                     @Override
                     protected Void call() {
                         ableToType(true);
