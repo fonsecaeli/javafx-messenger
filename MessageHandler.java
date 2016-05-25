@@ -1,15 +1,13 @@
 // Eli F.
 // Section: C
 // Final Project
-// Description: handles all the logic behind sending and recieving messages with java sockets
+// Description: handles all the logic behind sending and receiving messages with java sockets
 // Class name: MessageHandler
 // Version 1.0
 // 5/22/16
 
-import java.net.*;
-import java.util.*;
 import java.io.*;
-
+import java.net.*;
 
 public class MessageHandler {
 

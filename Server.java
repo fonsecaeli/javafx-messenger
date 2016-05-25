@@ -33,7 +33,7 @@ public class Server {
     private Map<String, String> userIDs; //TODO hash the passwords so they are not exposed
     private Map<InetAddress, String> userNames; //should not allow too clients to sign in with the same account because it causes issues because only one of them will recieve messages sent to that account
     private ArrayList<Integer> usedPorts;
-    private static int chatPort = 5678;
+    private static int chatPort = 5678; //ports dedicated to listening for connections
     private static int idPort = 9999;
 
     /**
@@ -45,13 +45,14 @@ public class Server {
         usedPorts = new ArrayList<>();
         usedPorts.add(idPort);
         usedPorts.add(chatPort);
-        ServerSocket server = null;
-        ServerSocket idSocket = null;
         this.connections = new HashMap<>(); //matches user names too messageHandlers so clients can request to chat with people by username instead of ip
         this.userIDs = new HashMap<>();
         this.userNames = new HashMap<>();
-        //naive approach to have a list of registered users
-        //some other program needs to be written to handle new users who want to sign up for an account
+        /*
+        naive approach to have a list of registered users
+        some other program needs to be written to handle new users who want to sign up for an account
+        this is a project for another time
+        */
         userIDs.put("Eli", "F");
         userIDs.put("Ravi", "Smith");
         userIDs.put("Andrew", "Wei");
@@ -110,15 +111,15 @@ public class Server {
         }
 
         /**
-         * handles the my protocal for accepting new connections to the server
-         * since my servesockets are binding on only 2 ports once one accpets a connection then the port
+         * handles the my protocol for accepting new connections to the server
+         * since my servesockets are binding on only 2 ports once one accepts a connection then the port
          * it was listening on is now taken.  so my program sends a new port number to the client and then closes the connection
-         * then the server will open a new socketserver on the new port and listen for new conneciton.
+         * then the server will open a new socketserver on the new port and listen for new connection
          * client will connect and we will still have the original two dedicated ports listening for new connection free
          *
-         * @param  socket         socket for intial conneciton
+         * @param  socket         socket for initial connection
          * @param  authentication if this method is being called to wait for authentication or chat purposes
-         * @throws IOException
+         * @throws IOException    if there is an issue with the streams, this signals that problem
          */
         private void wait(ServerSocket socket, boolean authentication) throws IOException {
             Socket connection = socket.accept();
@@ -159,9 +160,9 @@ public class Server {
             int newPort = (int)(Math.random()*maxPort)+minPort;
             while(usedPorts.contains(newPort)) {
                 newPort = (int)(Math.random()*maxPort)+minPort; //so we don't get any reserved ports
-                System.out.println("good port still not found");
+                System.out.println("free port still not found");
             }
-            System.out.println("found new port now");
+            System.out.println("found new port for client connection");
             return newPort;
         }
     }
@@ -173,7 +174,7 @@ public class Server {
 
         /**
          * constructor for IdHandler
-         * @param  clientSocket the socket through the conneciton is
+         * @param  clientSocket the socket through the connection is
          */
         public IdHandler(Socket clientSocket) {
             super(clientSocket);
@@ -183,7 +184,7 @@ public class Server {
          * waits for people to authenticate to the server
          */
         public void run() {
-            System.out.println("waiting to authenticate");
+            System.out.println("Waiting for user to authenticate");
             while(!Thread.currentThread().isInterrupted()) {
                 if(this.clientHandler().isClosed() || this.clientHandler() == null) {
                     Thread.currentThread().interrupt();
@@ -196,7 +197,7 @@ public class Server {
                     }
                     catch(SocketException e) {
                         e.printStackTrace();
-                        System.out.println("client has terminated connection");
+                        System.out.println("Client has terminated connection");
                         Thread.currentThread().interrupt();
                         break;
                     }
@@ -204,6 +205,7 @@ public class Server {
                         Thread.currentThread().interrupt();
                         break;
                     }
+                    //parse the users inputted userName and Password for authentication
                     Scanner lineScan = new Scanner(message.getMessage());
                     String userName = lineScan.next();
                     String password = lineScan.next();
@@ -230,7 +232,6 @@ public class Server {
                     }
                     //userNames.remove(this.sender());
                     //System.out.println("ended1");
-
                 }
             }
         }
@@ -270,9 +271,11 @@ public class Server {
             }
             }*/
 
-            //read in the message object from the
-            //find the right MessasgeHandler in the HashMap for the recipient
-            //then push the messages you recieve from the client to the recipient
+            /*
+            read in the message object from the
+            find the right MessageHandler in the HashMap for the recipient
+            then push the messages you received from the client to the recipient
+            */
             while(!Thread.currentThread().isInterrupted()) {
                 System.out.println(connections);
                 if(this.clientHandler().isClosed() || this.clientHandler() == null) {
@@ -281,7 +284,7 @@ public class Server {
                     break;
                 }
                 else {
-                    Message toBePushed = null;
+                    Message toBePushed;
                     try {
                         toBePushed = (Message) this.clientHandler().readMessage();
                     }
@@ -317,12 +320,16 @@ public class Server {
                         }*/
                     }
                 }
-                //Thread.currentThread().sleep(500); //so this thread can yeild resurces to other threads that are running
+                //Thread.currentThread().sleep(500); //so this thread can yield resources to other threads that are running
             }
             removeConnections();
 
         }
 
+        /**
+         * removes the given user from all of the Maps used for chatting
+         * is called when the user ends a chat session
+         */
         private void removeConnections() {
             connections.remove(userNames.get(this.sender())); //removes this clients connection from the serves map
             userNames.remove(this.sender());

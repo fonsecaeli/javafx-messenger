@@ -36,7 +36,7 @@ public class ClientGUI extends Application {
      * ip address of the server, would ideally be the public ip if the server is located on a computer that can be freely ACCESSED
      * but for testing and demo purpose it is set to the local ip of the server on the lakeside wifi
      */
-    private static final String serverIP = /*"192.168.1.137";*/"10.83.3.83"; //should be public ip address for the server
+    private static final String serverIP = "10.83.3.83"; //should be public ip address for the server
 
     private String userName;
     private String recipient; //whomever this client is currently talking with
@@ -245,13 +245,8 @@ public class ClientGUI extends Application {
         border.setCenter(historyBox);
 
 
-        userText.setOnAction(
-                e -> {
-                    Message message = new Message(userName + ": " + userText.getText(), recipient, userName);
-                    messageHandler.send(message);
-                    updateChatWindow(message.getMessage()+"\n");
-                    userText.clear();
-                });
+        userText.setOnAction(e -> {sendMessage();});
+        submitB.setOnAction(e -> {sendMessage();});
         //was considering adding a send as you type feature, like live text so what ever you typed automaticaly got sent
         /*userText.setOnKeyTyped(
         new EventHandler<KeyEvent>() {
@@ -263,12 +258,18 @@ public class ClientGUI extends Application {
         }
         }
         );*/
-
         Scene scene = new Scene(border, 400, 700);
         primaryStage.setScene(scene);
         scene.getStylesheets().add(ClientGUI.class.getResource("Login.css").toExternalForm()); //adding css style sheet
         primaryStage.show();
         startRunning();
+    }
+
+    private void sendMessage() {
+        Message message = new Message(userName + ": " + userText.getText(), recipient, userName);
+        messageHandler.send(message);
+        updateChatWindow(message.getMessage()+"\n");
+        userText.clear();
     }
 
     /**
