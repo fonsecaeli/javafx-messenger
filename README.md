@@ -40,38 +40,3 @@ The best way to examine the code would be to read the code in the following orde
 Testing Description:
 Run the program and try to chat with someone.  To test the different features you will probably have to open
 different client and try to chat in between them.
-
-Grading Rubric:
-
-1.	Functionality 21 points
-    a.	Does the IM allow users to communicate on the local network (does it theoretically allow for connection
-    between different networks if NAT was disabled? 16 points
-        i.	10 == one major error
-        ii. 13 == Some exceptions not handled, but they were difficult to raise
-        iii.15 == a number of minor problems
-        iv.	16 == no errors
-    c.	Does the IM allow multiple users to communicate at the same time? 5 points?
-        i.	0 == More than one major error
-        ii.	3 == Reasonable attempt at this feature
-        iii.5 == no error found
-2.	Program Design 10 point
-    a.	Structure 5 points
-        i.	0 == unacceptable structure
-        ii.	2 == poorly structured
-        iii.4.5 == reasonably well structured but uses many global variables or magic numbers
-        iv.	5 == all small, coherent, independent modules unless well justified
-    b.	GUI design 5 points
-        i.	0 == unacceptable visual appearance
-        ii.	3 == simple bland gui that gets the job done some features may not work
-        iii.5 == appealing to the eye and all functions work
-3.	Style and Documentation 9 points
-    i.	0 == unacceptable; no comments, no indentation, etc.
-    ii.	3 == difficult to read and understand, few comments, etc
-    iii.5 == generally good, but major comments missing
-    iv.	7 == generally good, but several imperfections
-    v.	8.5 == one or two small imperfections, improper indentation, a poorly chosen identifier
-    vi.	9 == good, magic number in the GUI don't count!
-
-
-
-
